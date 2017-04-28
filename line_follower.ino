@@ -21,12 +21,22 @@ int error = 0;
 unsigned long timestamp;
 unsigned long dt = 0;
 
-int previous_center = 0;
 float alpha = 0.5;
+
 int current_center = 0;
-int myInts[6];
+int current_left = 0;
+int current_right = 0;
 
+int previous_center;
+int previous_left;
+int previous_right;
 
+float center_values[10];
+float right_values[10];
+float left_values[10];
+
+int i = 0; 
+int temp = 0;
 
 void setup() {
     Serial.begin(9600);
@@ -44,33 +54,58 @@ void loop() {
   int center = analogRead(1);
   int right = analogRead(2);
   
-  //Serial.print(left);
-  //Serial.print("   ");
-  
-  current_center = round((1-alpha)*previous_center + alpha*center);
-  Serial.println(center - current_center);
-  previous_center = center;
-  //Serial.print("   "); 
-  //Serial.println("");
+ 
 
+  center_values[i] = (1-alpha)*previous_center + alpha*center;
+  left_values[i] = (1-alpha)*previous_left + alpha*left;
+  right_values[i] = (1-alpha)*previous_right + alpha*right;
+
+  float center_media = 0;
+  float left_media = 0;
+  float right_media = 0;
+
+  if (temp < 10) {
+    temp++;
+  }
   
-  /*Serial.print(analogRead(2) - 70);
+  for(int z = 0; z < temp - 1; z++) {
+    center_media += center_values[z];
+    left_media += left_values[z];
+    right_media += right_values[z];
+  }
+
+  center_media = center_media/(temp-1);
+  left_media = left_media/(temp-1);
+  right_media = right_media/(temp-1);
+
+  i = (i + 1)%10;
+
+  /*Serial.print(round(center_media));
   Serial.print(" ");
-  Serial.print(analogRead(1) - 70);
+  Serial.println(center);
+  /*Serial.print(" ");
+  Serial.print(round(left_media));
   Serial.print(" ");
-  Serial.print(analogRead(0) - 70);
-  Serial.println("");*/
+  Serial.print(left);
+  Serial.print(" ");
+  Serial.print(round(right_media));
+  Serial.print(" ");
+  Serial.println(right);*/
+  
+  previous_center = center;
+  previous_left = left;
+  previous_right = right;
 
   int value = calculatePID( (right-center) - (left-center) , 0);
-  //Serial.println(value);
+  Serial.println(value);
   
   if (Serial.available()) { 
   // Returns true if there is serial input.
     myservoright.write(89);
     myservoleft.write(89);
   } else {
-    myservoright.write(98 + round(value/2) );
-    myservoleft.write(80 + round(value/2) );
+    myservoright.write(128 + round((value/2)*1.5) );
+    myservoleft.write(50 + round((value/2)*1.5) );
   }
 }
 
