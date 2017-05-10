@@ -8,7 +8,7 @@ const int Ki = 2;
 const int Kd = 2;
 const int iniMotorPower = 0;
 
-int analogPin = 0;    
+int analogPin = 0;
 int val = 0;
 
 int P = 0;
@@ -35,13 +35,14 @@ float center_values[10];
 float right_values[10];
 float left_values[10];
 
-int i = 0; 
+int i = 0;
 int temp = 0;
 
 void setup() {
     Serial.begin(9600);
-    myservoleft.attach(7);
-    myservoright.attach(8);
+    myservoleft.attach(8);
+    myservoright.attach(7);
+    // 89 is the value to set in order to stop the servo motors
     myservoright.write(89);
     myservoleft.write(89);
 }
@@ -49,11 +50,12 @@ void setup() {
 void loop() {
   val = analogRead(analogPin);
   //Serial.println(val - 70);
-  
+
   int left = analogRead(0);
   int center = analogRead(1);
   int right = analogRead(2);
-  
+
+  // Complementary filter
   center_values[i] = (1-alpha)*previous_center + alpha*center;
   left_values[i] = (1-alpha)*previous_left + alpha*left;
   right_values[i] = (1-alpha)*previous_right + alpha*right;
@@ -65,7 +67,7 @@ void loop() {
   if (temp < 10) {
     temp++;
   }
-  
+
   for(int z = 0; z < temp - 1; z++) {
     center_media += center_values[z];
     left_media += left_values[z];
@@ -84,23 +86,23 @@ void loop() {
   Serial.print(" ");
   Serial.print(round(right_media));
   Serial.print(" ");
- 
-  
+
+
   previous_center = center;
   previous_left = left;
   previous_right = right;
   int current_difference = round((right_media-center_media) - (left_media-center_media));
   Serial.print(current_difference);
   Serial.print(" ");
-  int value = calculatePID( current_difference , 0);
+  int value = calculatePID(current_difference , 0);
   //Serial.println(value);
-  
-    Serial.println(value);
-    int speed = 6;
-    int offset = 0;
-    
-    myservoright.write(89 + speed + round(value/2)) ;
-    myservoleft.write(89 - speed  +  round(value/2));
+
+  Serial.println(value);
+
+  setSpeedLeft(value)
+  setSpeedRight(value)
+  // myservoright.write(89 + speed + round(value/2));
+  // myservoleft.write(89 - speed  +  round(value/2));
 }
 
 int calculatePID(int currentValue, int target)
@@ -113,4 +115,16 @@ int calculatePID(int currentValue, int target)
   previousError = error;
   timestamp = millis();
   return PIDvalue = (Kp*P) + (Ki*I) + (Kd*D);
+}
+
+const int speed = 6
+
+void setSpeedLeft(float value){
+  // 89 is the value to set in order to stop the servo motors
+  myservoleft.write(89 + speed + round(value/2));
+}
+
+void setSpeedRight(float value){
+  // 89 is the value to set in order to stop the servo motors
+  myservoright.write(89 - speed + round(value/2));
 }
