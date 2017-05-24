@@ -72,7 +72,7 @@ void setup() {
     // Initial sensors setup
     int iterations = 100;
 
-    for(int iter = 0; iter < iterations; z++) {
+    for(int iter = 0; iter < iterations; iter++) {
       left_sensor_ref += analogRead(0);
       center_sensor_ref += analogRead(1);
       right_sensor_ref += analogRead(2);
