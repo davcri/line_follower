@@ -19,7 +19,7 @@ int error = 0;
 
 float timestamp;
 float dt = 0;
- 
+
 float alpha = 0.5;
 
 int current_center = 0;
@@ -33,6 +33,11 @@ int previous_right;
 float center_values[10];
 float right_values[10];
 float left_values[10];
+
+// Sensors' reference values
+float center_sensor_ref = 0;
+float left_sensor_ref = 0;
+float right_sensor_ref = 0;
 
 int i = 0;
 int temp = 0;
@@ -64,19 +69,27 @@ void setup() {
     myservoright.write(89);
     myservoleft.write(89);
 
-    // average
-    l = analogRead(0);
-    c = analogRead(1);
-    r = analogRead(2);
+    // Initial sensors setup
+    int iterations = 100;
+
+    for(int iter = 0; iter < iterations; z++) {
+      left_sensor_ref += analogRead(0);
+      center_sensor_ref += analogRead(1);
+      right_sensor_ref += analogRead(2);
+    }
+
+    left_sensor_ref = round(left_sensor_ref/iterations);
+    center_sensor_ref = round(center_sensor_ref/iterations);
+    right_sensor_ref = round(right_sensor_ref/iterations);
 }
 
 void loop() {
   val = analogRead(analogPin);
   //Serial.println(val - 70);
 
-  int left = l - analogRead(0);
-  int center = c - analogRead(1);
-  int right = r - analogRead(2);
+  int left = left_sensor_ref - analogRead(0);
+  int center = center_sensor_ref - analogRead(1);
+  int right = right_sensor_ref - analogRead(2);
 
   // Complementary filter
   center_values[i] = (1-alpha)*previous_center + alpha*center;
@@ -130,7 +143,7 @@ void loop() {
 }
 
 float calculatePID(int currentValue, int target)
-{ 
+{
   dt = millis() - timestamp;
   error = target - currentValue;
   P = error;
@@ -140,4 +153,3 @@ float calculatePID(int currentValue, int target)
   timestamp = millis();
   return (Kp*P) + (Ki*I) + (Kd*D);
 }
-
