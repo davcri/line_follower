@@ -3,23 +3,22 @@
 Servo myservoleft;
 Servo myservoright;
 
-const int Kp = 4;
-const int Ki = 2;
-const int Kd = 2;
+const float Kp = 3.5;
+const float Ki = 0.01;
+const float Kd = 0.9;
 const int iniMotorPower = 0;
 
-int analogPin = 0;    
+int analogPin = 0;
 int val = 0;
 
-int P = 0;
-int I = 0;
-int D = 0;
-int PIDvalue = 0;
+float P = 0;
+float I = 0;
+float D = 0;
 int previousError = 0;
 int error = 0;
 
-unsigned long timestamp;
-unsigned long dt = 0;
+float timestamp;
+float dt = 0;
 
 float alpha = 0.5;
 
@@ -35,25 +34,64 @@ float center_values[10];
 float right_values[10];
 float left_values[10];
 
-int i = 0; 
+// Sensors' reference values
+float center_sensor_ref = 0;
+float left_sensor_ref = 0;
+float right_sensor_ref = 0;
+
+int i = 0;
 int temp = 0;
+
+int current_difference = 0;
+
+
+const int speed = 6;
+
+void setSpeedLeft(float value){
+  // 89 is the value to set in order to stop the servo motors
+  myservoleft.write(89 + speed - round(value/2));
+}
+
+void setSpeedRight(float value){
+  // 89 is the value to set in order to stop the servo motors
+  myservoright.write(89 - speed - round(value/2));
+}
+
+int l = 0;
+int c = 0;
+int r = 0;
 
 void setup() {
     Serial.begin(9600);
-    myservoleft.attach(7);
-    myservoright.attach(8);
+    myservoleft.attach(8);
+    myservoright.attach(7);
+    // 89 is the value to set in order to stop the servo motors
     myservoright.write(89);
     myservoleft.write(89);
+
+    // Initial sensors setup
+    int iterations = 100;
+
+    for(int iter = 0; iter < iterations; iter++) {
+      left_sensor_ref += analogRead(0);
+      center_sensor_ref += analogRead(1);
+      right_sensor_ref += analogRead(2);
+    }
+
+    left_sensor_ref = round(left_sensor_ref/iterations);
+    center_sensor_ref = round(center_sensor_ref/iterations);
+    right_sensor_ref = round(right_sensor_ref/iterations);
 }
 
 void loop() {
   val = analogRead(analogPin);
   //Serial.println(val - 70);
-  
-  int left = analogRead(0);
-  int center = analogRead(1);
-  int right = analogRead(2);
-  
+
+  int left = left_sensor_ref - analogRead(0);
+  int center = center_sensor_ref - analogRead(1);
+  int right = right_sensor_ref - analogRead(2);
+
+  // Complementary filter
   center_values[i] = (1-alpha)*previous_center + alpha*center;
   left_values[i] = (1-alpha)*previous_left + alpha*left;
   right_values[i] = (1-alpha)*previous_right + alpha*right;
@@ -65,7 +103,7 @@ void loop() {
   if (temp < 10) {
     temp++;
   }
-  
+
   for(int z = 0; z < temp - 1; z++) {
     center_media += center_values[z];
     left_media += left_values[z];
@@ -78,32 +116,33 @@ void loop() {
 
   i = (i + 1)%10;
 
-  Serial.print(round(left_media));
+ /* Serial.print(round(left_media));
   Serial.print(" ");
   Serial.print(round(center_media));
   Serial.print(" ");
   Serial.print(round(right_media));
-  Serial.print(" ");
- 
-  
+  Serial.print(" ");*/
+
+
   previous_center = center;
   previous_left = left;
   previous_right = right;
-  int current_difference = round((right_media-center_media) - (left_media-center_media));
-  Serial.print(current_difference);
-  Serial.print(" ");
-  int value = calculatePID( current_difference , 0);
+  current_difference = round((right_media-center_media) - (left_media-center_media));
+  Serial.println(current_difference);
+  //Serial.print(" ");
+  int value = calculatePID(current_difference , 0);
   //Serial.println(value);
-  
-    Serial.println(value);
-    int speed = 6;
-    int offset = 0;
-    
-    myservoright.write(89 + speed + round(value/2)) ;
-    myservoleft.write(89 - speed  +  round(value/2));
+  //Serial.print(" ");
+
+  //Serial.println(value);
+
+  setSpeedLeft(value);
+  setSpeedRight(value);
+  //myservoright.write(100);
+  //myservoleft.write(89);
 }
 
-int calculatePID(int currentValue, int target)
+float calculatePID(int currentValue, int target)
 {
   dt = millis() - timestamp;
   error = target - currentValue;
@@ -112,5 +151,5 @@ int calculatePID(int currentValue, int target)
   D = (error-previousError)/(dt/1000);
   previousError = error;
   timestamp = millis();
-  return PIDvalue = (Kp*P) + (Ki*I) + (Kd*D);
+  return (Kp*P) + (Ki*I) + (Kd*D);
 }
